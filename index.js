@@ -603,16 +603,42 @@ app.get('/api/parameters', async (req, res) => {
 });
 
 // GET all notification templates
+// app.get('/api/notification-templates', async (req, res) => {
+//   try {
+//     const templates = await NotificationTemplate.findAll();
+//     const formattedTemplates = templates.map(template => {
+//       const parts = template.name.split('.');
+//       return {
+//         id: template.id,
+//         serviceType: parts[0],
+//         eventTrigger: parts[1] + '.' + parts[2],
+//         party: parts[3],
+//         createdOn: template.created_on
+//       };
+//     });
+//     res.json(formattedTemplates);
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+//new 
+
 app.get('/api/notification-templates', async (req, res) => {
   try {
     const templates = await NotificationTemplate.findAll();
     const formattedTemplates = templates.map(template => {
       const parts = template.name.split('.');
+
+      const serviceType = parts.shift(); // Remove and get the first element
+      const party = parts.pop(); // Remove and get the last element
+      const eventTrigger = parts.join('.'); // Join the remaining elements
+
       return {
         id: template.id,
-        serviceType: parts[0],
-        eventTrigger: parts[1] + '.' + parts[2],
-        party: parts[3],
+        serviceType: serviceType || 'N/A', // Default if empty
+        eventTrigger: eventTrigger || 'N/A', // Default if empty
+        party: party || 'N/A', // Default if empty
         createdOn: template.created_on
       };
     });
