@@ -1,3 +1,6 @@
+// //new--------------------------------------------------------------
+
+
 // const express = require('express');
 // const bodyParser = require('body-parser');
 // const cors = require('cors');
@@ -47,6 +50,28 @@
 //   tableName: 'service_code'
 // });
 
+// // const NotificationTemplate = sequelize.define('notification_template', {
+// //   name: {
+// //     type: DataTypes.STRING,
+// //     allowNull: false
+// //   },
+// //   created_on: {
+// //     type: DataTypes.DATE,
+// //     allowNull: false
+// //   },
+// //   default_channel: {
+// //     type: DataTypes.STRING,
+// //     allowNull: true
+// //   },
+// //   template_definition: {
+// //     type: DataTypes.TEXT,
+// //     allowNull: true
+// //   }
+// // }, {
+// //   timestamps: false,
+// //   tableName: 'notification_template'
+// // });
+
 // const NotificationTemplate = sequelize.define('notification_template', {
 //   name: {
 //     type: DataTypes.STRING,
@@ -61,7 +86,7 @@
 //     allowNull: true
 //   },
 //   template_definition: {
-//     type: DataTypes.TEXT,
+//     type: DataTypes.JSONB,
 //     allowNull: true
 //   }
 // }, {
@@ -184,37 +209,37 @@
 //     }
 
 //     const defaultChannel = template.default_channel;
+//     let languages = [];
 //     if (template.template_definition) {
 //       const templateDefinition = JSON.parse(template.template_definition);
 //       console.log('Parsed Template Definition:', templateDefinition); // Debugging log
 
-//       const languages = templateDefinition.map(def => {
+//       languages = templateDefinition.map(def => {
 //         return {
 //           language: def.notificationDetails.basedOn, // Ensure this is correctly referencing the language field
 //           header: eventTrigger, // You can adjust as needed
 //           messageBody: def.messageDetails.definition.map(d => d.text)
 //         };
 //       });
-
-//       const notificationDetails = {
-//         id: template.id,
-//         serviceType,
-//         eventTrigger,
-//         party,
-//         createdOn: template.created_on,
-//         channel: defaultChannel,
-//         languages
-//       };
-
-//       res.json(notificationDetails);
-//     } else {
-//       res.status(404).json({ message: 'Template definition not found or malformed JSON' });
 //     }
+
+//     const notificationDetails = {
+//       id: template.id,
+//       serviceType,
+//       eventTrigger,
+//       party,
+//       createdOn: template.created_on,
+//       channel: defaultChannel,
+//       languages
+//     };
+
+//     res.json(notificationDetails);
 //   } catch (error) {
 //     console.error('Error fetching notification template:', error);
 //     res.status(500).json({ message: error.message });
 //   }
 // });
+
 
 // // final
 // app.get('/api/filter-service-types', async (req, res) => {
@@ -302,7 +327,8 @@
 // app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
 
 
-//new--------------------------------------------------------------
+
+///newwww///
 
 
 const express = require('express');
@@ -318,7 +344,6 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Initialize Sequelize to connect to PostgreSQL
-
 const sequelize = new Sequelize('edb', 'azamp_target', 'azamp_target', {
   host: '127.0.0.1',
   port: 5435,
@@ -473,56 +498,6 @@ app.get('/api/notification-templates', async (req, res) => {
   }
 });
 
-// app.get('/api/notification-templates/:id', async (req, res) => {
-//   try {
-//     const template = await NotificationTemplate.findByPk(req.params.id);
-//     if (!template) {
-//       return res.status(404).json({ message: 'Template not found' });
-//     }
-
-//     const parts = template.name.split('.');
-//     const serviceType = parts.shift() || 'N/A';
-//     let party = parts.pop() || 'N/A';
-//     let eventTrigger = parts.join('.') || 'N/A';
-
-//     if (party.match(/^[0-9a-zA-Z]$/)) {
-//       party = parts.pop() || 'N/A';
-//       eventTrigger = parts.join('.') || 'N/A';
-//     }
-
-//     const defaultChannel = template.default_channel;
-//     if (template.template_definition) {
-//       const templateDefinition = JSON.parse(template.template_definition);
-//       console.log('Parsed Template Definition:', templateDefinition); // Debugging log
-
-//       const languages = templateDefinition.map(def => {
-//         return {
-//           language: def.notificationDetails.basedOn, // Ensure this is correctly referencing the language field
-//           header: eventTrigger, // You can adjust as needed
-//           messageBody: def.messageDetails.definition.map(d => d.text)
-//         };
-//       });
-
-//       const notificationDetails = {
-//         id: template.id,
-//         serviceType,
-//         eventTrigger,
-//         party,
-//         createdOn: template.created_on,
-//         channel: defaultChannel,
-//         languages
-//       };
-
-//       res.json(notificationDetails);
-//     } else {
-//       res.status(404).json({ message: 'Template definition not found or malformed JSON' });
-//     }
-//   } catch (error) {
-//     console.error('Error fetching notification template:', error);
-//     res.status(500).json({ message: error.message });
-//   }
-// });
-
 app.get('/api/notification-templates/:id', async (req, res) => {
   try {
     const template = await NotificationTemplate.findByPk(req.params.id);
@@ -572,6 +547,28 @@ app.get('/api/notification-templates/:id', async (req, res) => {
   }
 });
 
+// New API endpoint to fetch language and text
+app.get('/api/languages-texts/:id', async (req, res) => {
+  try {
+    const template = await NotificationTemplate.findByPk(req.params.id);
+    if (!template) {
+      return res.status(404).json({ message: 'Template not found' });
+    }
+
+    const templateDefinition = JSON.parse(template.template_definition || '[]');
+    const languagesTexts = templateDefinition.flatMap(def => 
+      def.messageDetails.definition.map(d => ({
+        language: d.language,
+        text: d.text
+      }))
+    );
+
+    res.json(languagesTexts);
+  } catch (error) {
+    console.error('Error fetching languages and texts:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // final
 app.get('/api/filter-service-types', async (req, res) => {
@@ -657,6 +654,3 @@ app.get('/api/filter-parties/:serviceType/:eventTrigger', async (req, res) => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
-
-
-
