@@ -1263,54 +1263,85 @@ app.get('/api/notification-templates', async (req, res) => {
   }
 });
 
-app.get('/api/notification-templates/:id', async (req, res) => {
+// app.get('/api/notification-templates/:id', async (req, res) => {
+//   try {
+//     const template = await NotificationTemplate.findByPk(req.params.id);
+//     if (!template) {
+//       return res.status(404).json({ message: 'Template not found' });
+//     }
+
+//     const parts = template.name.split('.');
+//     const serviceType = parts.shift() || 'N/A';
+//     let party = parts.pop() || 'N/A';
+//     let eventTrigger = parts.join('.') || 'N/A';
+
+//     if (party.match(/^[0-9a-zA-Z]$/)) {
+//       party = parts.pop() || 'N/A';
+//       eventTrigger = parts.join('.') || 'N/A';
+//     }
+
+//     const defaultChannel = template.default_channel;
+//     let languages = [];
+//     if (template.template_definition) {
+//       const templateDefinition = JSON.parse(template.template_definition);
+//       console.log('Parsed Template Definition:', templateDefinition); // Debugging log
+
+//       languages = templateDefinition.map(def => {
+//         return {
+//           language: def.notificationDetails.basedOn, // Ensure this is correctly referencing the language field
+//           header: eventTrigger, // You can adjust as needed
+//           messageBody: def.messageDetails.definition.map(d => d.text)
+//         };
+//       });
+//     }
+
+//     const notificationDetails = {
+//       id: template.id,
+//       serviceType,
+//       eventTrigger,
+//       party,
+//       createdOn: template.created_on,
+//       channel: defaultChannel,
+//       languages
+//     };
+
+//     res.json(notificationDetails);
+//   } catch (error) {
+//     console.error('Error fetching notification template:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// API to fetch languages and texts from template_definition
+app.get('/api/notification-details/:id', async (req, res) => {
   try {
     const template = await NotificationTemplate.findByPk(req.params.id);
     if (!template) {
       return res.status(404).json({ message: 'Template not found' });
     }
 
-    const parts = template.name.split('.');
-    const serviceType = parts.shift() || 'N/A';
-    let party = parts.pop() || 'N/A';
-    let eventTrigger = parts.join('.') || 'N/A';
+    const templateDefinition = JSON.parse(template.template_definition || '[]');
+    const languagesTexts = templateDefinition.flatMap(def =>
+      def.messageDetails.definition.map(d => ({
+        language: d.language,
+        text: d.text
+      }))
+    );
 
-    if (party.match(/^[0-9a-zA-Z]$/)) {
-      party = parts.pop() || 'N/A';
-      eventTrigger = parts.join('.') || 'N/A';
-    }
-
-    const defaultChannel = template.default_channel;
-    let languages = [];
-    if (template.template_definition) {
-      const templateDefinition = JSON.parse(template.template_definition);
-      console.log('Parsed Template Definition:', templateDefinition); // Debugging log
-
-      languages = templateDefinition.map(def => {
-        return {
-          language: def.notificationDetails.basedOn, // Ensure this is correctly referencing the language field
-          header: eventTrigger, // You can adjust as needed
-          messageBody: def.messageDetails.definition.map(d => d.text)
-        };
-      });
-    }
-
-    const notificationDetails = {
-      id: template.id,
-      serviceType,
-      eventTrigger,
-      party,
+    res.json({
+      serviceType: template.name.split('.')[0],
+      eventTrigger: template.name.split('.')[1],
+      party: template.name.split('.')[2],
       createdOn: template.created_on,
-      channel: defaultChannel,
-      languages
-    };
-
-    res.json(notificationDetails);
+      channel: template.default_channel,
+      languagesTexts
+    });
   } catch (error) {
-    console.error('Error fetching notification template:', error);
+    console.error('Error fetching notification details:', error);
     res.status(500).json({ message: error.message });
   }
 });
+
 
 // New API endpoint to fetch language and text
 app.get('/api/languages-texts/:id', async (req, res) => {
