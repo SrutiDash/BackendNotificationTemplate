@@ -137,13 +137,71 @@ app.get('/api/parties', async (req, res) => {
   res.json(parties.map(item => item.party_type));
 });
 
-app.get('/api/parameters', async (req, res) => {
-  const parameters = await ParamMapping.findAll({
-    attributes: ['param_name'],
-    group: ['param_name']
-  });
-  res.json(parameters.map(item => item.param_name));
+// app.get('/api/parameters', async (req, res) => {
+//   const parameters = await ParamMapping.findAll({
+//     attributes: ['param_name'],
+//     group: ['param_name']
+//   });
+//   res.json(parameters.map(item => item.param_name));
+// });
+
+//---------------------new-------------------
+
+// app.get('/api/parameters', async (req, res) => {
+//   const { serviceCode, eventName, partyType } = req.query;
+  
+//   try {
+//     const parameters = await ParamMapping.findAll({
+//       where: {
+//         event_name: eventName,
+//         party_type: partyType
+//       },
+//       attributes: ['param_name']
+//     });
+
+//     const paramNames = parameters.map(item => item.param_name);
+//     res.json(paramNames);
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// API for fetching parameters for the create notification layout
+app.get('/api/create-parameters', async (req, res) => {
+  try {
+    const parameters = await ParamMapping.findAll({
+      attributes: ['param_name'],
+      group: ['param_name']
+    });
+    res.json(parameters.map(item => item.param_name));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
+
+// API for fetching parameters for the edit notification layout
+app.get('/api/edit-parameters', async (req, res) => {
+  const { serviceCode, eventName, partyType } = req.query;
+  
+  try {
+    const parameters = await ParamMapping.findAll({
+      where: {
+        event_name: eventName,
+        party_type: partyType
+      },
+      attributes: ['param_name']
+    });
+
+    const paramNames = parameters.map(item => item.param_name);
+    res.json(paramNames);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+
+
+//---------------------------------------------------------
 
 app.get('/api/notification-templates', async (req, res) => {
   const { serviceType, eventTrigger, party, startDate, endDate } = req.query;
@@ -344,3 +402,192 @@ app.get('/api/filter-parties/:serviceType/:eventTrigger', async (req, res) => {
 // Start the server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
+
+
+// //new for oracle :
+
+// const express = require('express');
+// const bodyParser = require('body-parser');
+// const cors = require('cors');
+// const oracledb = require('oracledb');  // Import oracledb
+
+// // Initialize Express app
+// const app = express();
+
+// // Middleware
+// app.use(bodyParser.json());
+// app.use(cors());
+
+// // Oracle DB connection details
+// const dbConfig = {
+//   user: 'K8S_PE_ENV_PARTY',
+//   password: 'Payx07',
+//   connectString: '127.0.0.1:1525/dahabdev_pdb1.mumdbsubnet.mumvcn.oraclevcn.com'
+// };
+
+// // Function to execute queries
+// async function executeQuery(query, params = []) {
+//   let connection;
+//   try {
+//     connection = await oracledb.getConnection(dbConfig);
+//     const result = await connection.execute(query, params);
+//     return result.rows;
+//   } catch (err) {
+//     console.error('Error executing query:', err);
+//     throw err;
+//   } finally {
+//     if (connection) {
+//       try {
+//         await connection.close();
+//         console.log('Connection closed');
+//       } catch (err) {
+//         console.error('Error closing connection:', err);
+//       }
+//     }
+//   }
+// }
+
+// // Define models (mapped to your tables)
+// const models = {
+//   paramMapping: {
+//     name: 'param_mapping_list',
+//     columns: ['event_name', 'party_type', 'param_name']
+//   },
+//   serviceCode: {
+//     name: 'service_code',
+//     columns: ['code']
+//   },
+//   notificationTemplate: {
+//     name: 'notification_template',
+//     columns: ['name', 'created_on', 'default_channel', 'template_definition']
+//   }
+// };
+
+// // API to fetch texts from template_definition
+// app.get('/api/notification/texts', async (req, res) => {
+//   try {
+//     const templates = await executeQuery(`SELECT ${models.notificationTemplate.columns.join(', ')} FROM ${models.notificationTemplate.name}`);
+//     const texts = templates.flatMap(template => {
+//       try {
+//         const templateData = JSON.parse(template[3]); // template_definition is at index 3
+//         return templateData.map(def => def.messageDetails.definition.map(d => d.text)).flat();
+//       } catch (error) {
+//         console.error('Failed to parse JSON:', error);
+//         return [];
+//       }
+//     });
+//     res.json({ texts });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // API to fetch languages from template_definition
+// app.get('/api/notification/languages', async (req, res) => {
+//   try {
+//     const templates = await executeQuery(`SELECT ${models.notificationTemplate.columns.join(', ')} FROM ${models.notificationTemplate.name}`);
+//     const languages = templates.flatMap(template => {
+//       try {
+//         const templateData = JSON.parse(template[3]); // template_definition is at index 3
+//         return templateData.map(def => def.messageDetails.definition.map(d => d.language)).flat();
+//       } catch (error) {
+//         console.error('Failed to parse JSON:', error);
+//         return [];
+//       }
+//     });
+//     res.json({ languages });
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // API to fetch service types
+// app.get('/api/service-types', async (req, res) => {
+//   try {
+//     const serviceTypes = await executeQuery(`SELECT DISTINCT ${models.serviceCode.columns.join(', ')} FROM ${models.serviceCode.name}`);
+//     res.json(serviceTypes.map(item => item[0]));
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // API to fetch event triggers
+// app.get('/api/event-triggers', async (req, res) => {
+//   try {
+//     const eventTriggers = await executeQuery(`SELECT DISTINCT ${models.paramMapping.columns[0]} FROM ${models.paramMapping.name}`);
+//     res.json(eventTriggers.map(item => item[0]));
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // API to fetch parties
+// app.get('/api/parties', async (req, res) => {
+//   try {
+//     const parties = await executeQuery(`SELECT DISTINCT ${models.paramMapping.columns[1]} FROM ${models.paramMapping.name}`);
+//     res.json(parties.map(item => item[0]));
+//   } catch (error) {
+//     res.status(500).json({ error: error.message });
+//   }
+// });
+
+// // API to fetch notification templates
+// app.get('/api/notification-templates', async (req, res) => {
+//   const { serviceType, eventTrigger, party, startDate, endDate } = req.query;
+  
+//   let whereClauses = [];
+//   let params = [];
+
+//   if (serviceType) {
+//     whereClauses.push(`name LIKE :serviceType`);
+//     params.push(`${serviceType}.%`);
+//   }
+
+//   if (eventTrigger) {
+//     whereClauses.push(`name LIKE :eventTrigger`);
+//     params.push(`%${eventTrigger}%`);
+//   }
+
+//   if (party) {
+//     whereClauses.push(`name LIKE :party`);
+//     params.push(`%${party}`);
+//   }
+
+//   if (startDate && endDate) {
+//     whereClauses.push(`created_on BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')`);
+//     params.push(startDate, endDate);
+//   }
+
+//   const whereClause = whereClauses.length ? `WHERE ${whereClauses.join(' AND ')}` : '';
+
+//   try {
+//     const templates = await executeQuery(`SELECT ${models.notificationTemplate.columns.join(', ')} FROM ${models.notificationTemplate.name} ${whereClause}`, params);
+    
+//     const formattedTemplates = templates.map(template => {
+//       const parts = template[0].split('.');
+//       const serviceType = parts.shift() || 'N/A';
+//       let party = parts.pop() || 'N/A';
+//       let eventTrigger = parts.join('.') || 'N/A';
+//       if (party.match(/^[0-9a-zA-Z]$/)) {
+//         party = parts.pop() || 'N/A';
+//         eventTrigger = parts.join('.') || 'N/A';
+//       }
+//       return {
+//         id: template[0],  // Assuming the ID is in the first column
+//         serviceType: serviceType,
+//         eventTrigger: eventTrigger,
+//         party: party,
+//         createdOn: template[1]
+//       };
+//     });
+
+//     res.json(formattedTemplates);
+//   } catch (error) {
+//     console.error('Error fetching notification templates:', error);
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+
+// // Start the server
+// const PORT = process.env.PORT || 5000;
+// app.listen(PORT, () => console.log(`Server started on port ${PORT}`));
