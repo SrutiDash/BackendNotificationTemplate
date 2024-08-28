@@ -826,6 +826,28 @@ app.get('/api/filter-parties/:serviceType/:eventTrigger', async (req, res) => {
   }
 });
 
+// API to fetch languages for create new layout
+app.get('/api/create-new-language', async (req, res) => {
+  try {
+    const query = `
+      SELECT description 
+      FROM SYS_ENUMERATION 
+      WHERE ENUM_TYPE_ID = 'NOTIF_LANGUAGE'
+    `;
+    const languages = await sequelize.query(query, {
+      type: Sequelize.QueryTypes.SELECT
+    });
+
+    res.json(languages.map(lang => lang.description));
+  } catch (error) {
+    console.error('Error fetching languages:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Other existing APIs...
+
+
 // Sync database
 sequelize.sync().catch(err => console.log('Error: ' + err));
 
